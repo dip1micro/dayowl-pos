@@ -1,10 +1,9 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_file
 import cv2
 import numpy as np
-import json
+import base64
 import os
 from datetime import datetime
-from collections import deque
 import uuid
 
 app = Flask(__name__)
@@ -14,6 +13,67 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 all_sessions = []
 
+# ── Helpers ────────────────────────────────────────────────────────────────────
+def frame_to_base64(frame):
+    """Convert OpenCV frame to base64 string for embedding in JSON"""
+    _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
+    return base64.b64encode(buffer).decode('utf-8')
+
+def annotate_frame(frame, label, severity='CRITICAL'):
+    """Draw alert label on frame"""
+    annotated = frame.copy()
+    h, w = annotated.shape[:2]
+    color = (0, 0, 255) if severity == 'CRITICAL' else (0, 165, 255)
+    # Dark banner at top
+    cv2.rectangle(annotated, (0, 0), (w, 48), (0, 0, 0), -1)
+    cv2.putText(annotated, f'DAYOWL ALERT: {label}',
+                (10, 32), cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
+    # Timestamp
+    ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    cv2.putText(annotated, ts, (w - 220, 32),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (180, 180, 180), 1)
+    return annotated
+
+def make_side_by_side(before_frame, after_frame, label):
+    """Create before/after comparison image"""
+    h = max(before_frame.shape[0], after_frame.shape[0])
+    w = before_frame.shape[1]
+
+    # Resize both to same height
+    b = cv2.resize(before_frame, (w, h))
+    a = cv2.resize(after_frame,  (w, h))
+
+    # Add labels
+    cv2.rectangle(b, (0, 0), (w, 36), (30, 30, 30), -1)
+    cv2.putText(b, 'BEFORE (drawer closed)', (8, 24),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 100), 1)
+    cv2.rectangle(a, (0, 0), (w, 36), (30, 30, 30), -1)
+    cv2.putText(a, f'ALERT: {label}', (8, 24),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 1)
+
+    # Divider line
+    divider = np.zeros((h, 4, 3), dtype=np.uint8)
+    divider[:] = (80, 80, 80)
+
+    combined = np.hstack([b, divider, a])
+    return combined
+
+def draw_detection_box(frame, sensitivity):
+    """Draw the region the model is actually watching"""
+    annotated = frame.copy()
+    h, w = annotated.shape[:2]
+    # Draw the detection zone (same region as DrawerDetector)
+    x1, y1 = int(w*0.2), int(h*0.5)
+    x2, y2 = int(w*0.8), h
+    cv2.rectangle(annotated, (x1, y1), (x2, y2), (0, 255, 255), 2)
+    cv2.putText(annotated, 'DETECTION ZONE', (x1+4, y1+20),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 255, 255), 1)
+    cv2.putText(annotated, f'sensitivity={sensitivity}', (x1+4, y1+42),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.45, (180, 180, 180), 1)
+    return annotated
+
+
+# ── Detectors ─────────────────────────────────────────────────────────────────
 class DrawerDetector:
     def __init__(self, sensitivity=20):
         self.sensitivity = sensitivity
@@ -47,7 +107,6 @@ class DrawerDetector:
         if just_closed and self.open_time:
             self.events.append({'event': 'closed', 'time': round(timestamp,1),
                                 'duration_sec': round(timestamp - self.open_time, 1), 'diff_score': round(diff,1)})
-
         self.drawer_open = is_open
         return is_open, just_opened, just_closed, round(diff, 1)
 
@@ -63,6 +122,7 @@ class MotionDetector:
         return round((np.sum(fg_mask > 0) / (frame.shape[0] * frame.shape[1])) * 100, 2)
 
 
+# ── Main Analysis ──────────────────────────────────────────────────────────────
 def analyze_video(video_path, settings):
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
@@ -80,7 +140,6 @@ def analyze_video(video_path, settings):
     drawer_timeout = int(settings.get('drawer_timeout_sec', 60))
     what_happened  = settings.get('what_happened', '').strip()
 
-    # Parse manual transaction times
     txn_times = []
     raw_txn = settings.get('txn_times', '').strip()
     if raw_txn:
@@ -101,6 +160,10 @@ def analyze_video(video_path, settings):
     frame_log = []
     drawer_timeout_alerted = False
 
+    # Store frames for visual output
+    prev_frame = None        # last frame before alert (for side-by-side)
+    frame_buffer = []        # rolling buffer of recent frames
+
     frame_num = 0
     skip = max(1, int(fps / 5))
 
@@ -109,6 +172,12 @@ def analyze_video(video_path, settings):
         if not ret:
             break
         frame_num += 1
+
+        # Keep rolling buffer of last 25 frames
+        frame_buffer.append(frame.copy())
+        if len(frame_buffer) > 25:
+            frame_buffer.pop(0)
+
         if frame_num % skip != 0:
             continue
 
@@ -123,23 +192,45 @@ def analyze_video(video_path, settings):
         is_open, just_opened, just_closed, diff_score = drawer_det.process(frame, timestamp)
         motion_pct = motion_det.detect(frame)
 
-        # ALERT: Drawer open — no sale
+        # ── ALERT: Drawer open — no sale ──────────────────────────────────
         if just_opened and secs_since_txn > no_sale_window:
+            before_frame = frame_buffer[0] if frame_buffer else frame
+
+            # 📸 Snapshot — annotated alert frame
+            snapshot = annotate_frame(frame.copy(), 'DRAWER OPEN — NO SALE', 'CRITICAL')
+            snapshot_b64 = frame_to_base64(snapshot)
+
+            # 📊 Side-by-side before/after
+            sbs = make_side_by_side(before_frame, frame.copy(), 'DRAWER OPEN')
+            sbs_b64 = frame_to_base64(sbs)
+
+            # 🔴 Detection box — show what zone model watches
+            boxed = draw_detection_box(frame.copy(), drawer_sens)
+            boxed_b64 = frame_to_base64(boxed)
+
             session_alerts.append({
                 'id': str(uuid.uuid4())[:8],
                 'type': 'DRAWER OPEN — NO SALE',
                 'severity': 'CRITICAL',
-                'message': f'Drawer opened {int(secs_since_txn)}s after last transaction. Your threshold: {no_sale_window}s.',
+                'message': f'Drawer opened {int(secs_since_txn)}s after last transaction. Threshold: {no_sale_window}s.',
                 'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
                 'video_time': f'{timestamp}s',
                 'diff_score': diff_score,
-                'why': f'diff_score {diff_score} > drawer_sensitivity {drawer_sens}'
+                'why': f'diff_score {diff_score} > sensitivity {drawer_sens}',
+                'snapshot_b64': snapshot_b64,
+                'sidebyside_b64': sbs_b64,
+                'boxed_b64': boxed_b64,
             })
 
-        # ALERT: Drawer open too long
+        # ── ALERT: Drawer open too long ───────────────────────────────────
         if is_open and drawer_det.open_time and not drawer_timeout_alerted:
             open_dur = timestamp - drawer_det.open_time
             if open_dur > drawer_timeout:
+                snapshot = annotate_frame(frame.copy(), f'DRAWER OPEN {int(open_dur)}s', 'WARNING')
+                snapshot_b64 = frame_to_base64(snapshot)
+                boxed = draw_detection_box(frame.copy(), drawer_sens)
+                boxed_b64 = frame_to_base64(boxed)
+
                 session_alerts.append({
                     'id': str(uuid.uuid4())[:8],
                     'type': 'DRAWER OPEN TOO LONG',
@@ -148,7 +239,10 @@ def analyze_video(video_path, settings):
                     'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
                     'video_time': f'{timestamp}s',
                     'diff_score': diff_score,
-                    'why': f'open duration {int(open_dur)}s > drawer_timeout {drawer_timeout}s'
+                    'why': f'open duration {int(open_dur)}s > timeout {drawer_timeout}s',
+                    'snapshot_b64': snapshot_b64,
+                    'sidebyside_b64': None,
+                    'boxed_b64': boxed_b64,
                 })
                 drawer_timeout_alerted = True
 
@@ -157,15 +251,21 @@ def analyze_video(video_path, settings):
 
         # Per-second log
         if frame_num % int(fps) == 0:
+            # Tiny thumbnail for frame log
+            thumb = cv2.resize(frame, (120, 68))
+            thumb_b64 = frame_to_base64(thumb)
             frame_log.append({
                 'time': f'{timestamp}s',
                 'drawer': 'OPEN 🔴' if is_open else 'CLOSED 🟢',
                 'diff_score': diff_score,
-                'diff_vs_threshold': f'{diff_score} vs {drawer_sens} → {"OPEN" if is_open else "closed"}',
+                'diff_vs_threshold': f'{diff_score} vs {drawer_sens}',
                 'motion_pct': f'{motion_pct}%',
                 'secs_since_txn': secs_since_txn if secs_since_txn != 9999 else 'no txn yet',
-                'alert_fired': '🚨 YES' if any(a['video_time'] == f'{timestamp}s' for a in session_alerts) else 'no'
+                'alert_fired': '🚨 YES' if any(a['video_time'] == f'{timestamp}s' for a in session_alerts) else 'no',
+                'thumb_b64': thumb_b64,
             })
+
+        prev_frame = frame.copy()
 
     cap.release()
 
@@ -207,10 +307,10 @@ def analyze_video(video_path, settings):
     return result
 
 
+# ── Routes ─────────────────────────────────────────────────────────────────────
 @app.route('/')
 def index():
     return render_template('index.html')
-
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
@@ -240,23 +340,20 @@ def analyze():
         pass
     return jsonify(result)
 
-
 @app.route('/sessions')
 def get_sessions():
     return jsonify([{
-        'session_id':   s['session_id'],
-        'timestamp':    s['timestamp'],
-        'video':        s['video'],
-        'total_alerts': s['summary']['total_alerts'],
-        'critical':     s['summary']['critical'],
+        'session_id':    s['session_id'],
+        'timestamp':     s['timestamp'],
+        'video':         s['video'],
+        'total_alerts':  s['summary']['total_alerts'],
+        'critical':      s['summary']['critical'],
         'what_happened': s['what_happened']
     } for s in all_sessions])
-
 
 @app.route('/health')
 def health():
     return jsonify({'status': 'ok', 'sessions': len(all_sessions)})
-
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
