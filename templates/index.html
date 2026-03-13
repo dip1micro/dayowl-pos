@@ -7,188 +7,101 @@
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #080c10; --panel: #0d1117; --border: #1a2535;
-    --green: #00ff88; --red: #ff3355; --yellow: #ffcc00;
-    --blue: #00aaff; --dim: #4a5568; --text: #c9d1d9;
+    --bg:#080c10; --panel:#0d1117; --border:#1a2535;
+    --green:#00ff88; --red:#ff3355; --yellow:#ffcc00;
+    --blue:#00aaff; --dim:#4a5568; --text:#c9d1d9;
   }
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { background:var(--bg); color:var(--text); font-family:'Rajdhani',sans-serif; min-height:100vh; }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;min-height:100vh}
+  header{border-bottom:1px solid var(--border);padding:16px 32px;display:flex;align-items:center;justify-content:space-between;background:var(--panel)}
+  .logo{display:flex;align-items:center;gap:12px}
+  .logo-owl{font-size:28px;animation:pulse 3s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+  .logo-text{font-size:22px;font-weight:700;letter-spacing:4px;color:var(--green)}
+  .logo-sub{font-size:11px;color:var(--dim);letter-spacing:3px;font-family:'Share Tech Mono',monospace}
+  .status-dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;animation:blink 1.5s infinite;margin-right:8px}
+  @keyframes blink{0%,100%{opacity:1;box-shadow:0 0 6px var(--green)}50%{opacity:0.2}}
+  main{max-width:1100px;margin:0 auto;padding:28px 20px}
+  .tuning-panel{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:24px;margin-bottom:24px}
+  .section-title{font-size:12px;letter-spacing:4px;color:var(--dim);text-transform:uppercase;margin-bottom:18px;font-family:'Share Tech Mono',monospace;display:flex;align-items:center;gap:12px}
+  .section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+  .tuning-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;margin-bottom:20px}
+  .control-group{display:flex;flex-direction:column;gap:8px}
+  .control-label{font-size:13px;font-weight:700;color:var(--text);letter-spacing:1px}
+  .control-hint{font-size:11px;color:var(--dim);font-family:'Share Tech Mono',monospace;line-height:1.6}
+  .control-value{color:var(--green);font-weight:700;font-family:'Share Tech Mono',monospace}
+  input[type=range]{width:100%;accent-color:var(--green);cursor:pointer;height:4px}
+  input[type=number],input[type=text],textarea{background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:'Share Tech Mono',monospace;font-size:13px;padding:8px 12px;width:100%;transition:border-color 0.2s}
+  input[type=number]:focus,input[type=text]:focus,textarea:focus{outline:none;border-color:var(--green)}
+  textarea{resize:vertical;min-height:60px}
+  .full-width{grid-column:1/-1}
+  .upload-zone{border:2px dashed var(--border);border-radius:8px;padding:36px 24px;text-align:center;cursor:pointer;transition:all 0.3s;background:var(--panel);margin-bottom:24px}
+  .upload-zone:hover,.upload-zone.dragover{border-color:var(--green);background:rgba(0,255,136,0.03)}
+  .upload-icon{font-size:40px;margin-bottom:12px}
+  .upload-title{font-size:18px;font-weight:700;color:var(--green);letter-spacing:2px;margin-bottom:6px}
+  .upload-sub{font-size:12px;color:var(--dim);font-family:'Share Tech Mono',monospace;margin-bottom:16px}
+  .btn{display:inline-block;padding:10px 28px;background:transparent;border:1px solid var(--green);color:var(--green);font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;letter-spacing:3px;text-transform:uppercase;cursor:pointer;transition:all 0.2s;border-radius:4px}
+  .btn:hover{background:var(--green);color:var(--bg);box-shadow:0 0 20px rgba(0,255,136,0.3)}
+  #fileInput{display:none}
+  .analyzing{display:none;text-align:center;padding:28px;background:var(--panel);border:1px solid var(--border);border-radius:8px;margin-bottom:24px}
+  .analyzing.active{display:block}
+  .progress-bar-wrap{background:var(--border);border-radius:4px;height:4px;margin:16px auto;max-width:400px;overflow:hidden}
+  .progress-bar{height:100%;background:var(--green);animation:progress 1.8s ease-in-out infinite;box-shadow:0 0 10px var(--green)}
+  @keyframes progress{0%{width:0%;margin-left:0}50%{width:60%;margin-left:20%}100%{width:0%;margin-left:100%}}
+  .mono{font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--green);letter-spacing:2px}
+  .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+  .stat-card{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:18px;text-align:center}
+  .stat-value{font-size:40px;font-weight:700;font-family:'Share Tech Mono',monospace;line-height:1;margin-bottom:6px}
+  .stat-label{font-size:11px;letter-spacing:2px;color:var(--dim);text-transform:uppercase}
+  .red{color:var(--red)}.yellow{color:var(--yellow)}.green{color:var(--green)}.blue{color:var(--blue)}
+  .tabs{display:flex;gap:0;margin-bottom:0;border-bottom:1px solid var(--border)}
+  .tab{padding:10px 22px;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;color:var(--dim);border-bottom:2px solid transparent;transition:all 0.2s;font-family:'Share Tech Mono',monospace}
+  .tab.active{color:var(--green);border-bottom-color:var(--green)}
+  .tab-panel{display:none}
+  .tab-panel.active{display:block}
+  .results-box{background:var(--panel);border:1px solid var(--border);border-radius:0 0 8px 8px;overflow:hidden;margin-bottom:24px}
 
-  header {
-    border-bottom:1px solid var(--border); padding:16px 32px;
-    display:flex; align-items:center; justify-content:space-between;
-    background:var(--panel);
-  }
-  .logo { display:flex; align-items:center; gap:12px; }
-  .logo-owl { font-size:28px; animation:pulse 3s ease-in-out infinite; }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
-  .logo-text { font-size:22px; font-weight:700; letter-spacing:4px; color:var(--green); }
-  .logo-sub { font-size:11px; color:var(--dim); letter-spacing:3px; font-family:'Share Tech Mono',monospace; }
-  .status-dot { width:8px; height:8px; border-radius:50%; background:var(--green); display:inline-block;
-    animation:blink 1.5s infinite; margin-right:8px; }
-  @keyframes blink { 0%,100%{opacity:1;box-shadow:0 0 6px var(--green)} 50%{opacity:0.2} }
+  /* Alert card with images */
+  .alert-card{border-bottom:1px solid var(--border);padding:18px 20px;animation:slideIn 0.3s ease}
+  @keyframes slideIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+  .alert-card:last-child{border-bottom:none}
+  .alert-header{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+  .badge{padding:3px 10px;border-radius:3px;font-size:11px;font-weight:700;letter-spacing:1px;font-family:'Share Tech Mono',monospace}
+  .badge-critical{background:rgba(255,51,85,0.15);color:var(--red);border:1px solid rgba(255,51,85,0.3)}
+  .badge-warning{background:rgba(255,204,0,0.15);color:var(--yellow);border:1px solid rgba(255,204,0,0.3)}
+  .alert-type{font-size:15px;font-weight:700;color:var(--text)}
+  .alert-msg{font-size:12px;color:var(--dim);font-family:'Share Tech Mono',monospace;margin-bottom:4px}
+  .alert-why{font-size:11px;color:var(--blue);font-family:'Share Tech Mono',monospace;margin-bottom:12px}
 
-  main { max-width:1100px; margin:0 auto; padding:28px 20px; }
+  /* Image viewer */
+  .img-tabs{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+  .img-tab{padding:5px 14px;font-size:11px;font-weight:700;letter-spacing:1px;cursor:pointer;border-radius:3px;font-family:'Share Tech Mono',monospace;border:1px solid var(--border);color:var(--dim);transition:all 0.2s}
+  .img-tab.active{border-color:var(--green);color:var(--green);background:rgba(0,255,136,0.05)}
+  .img-viewer{background:var(--bg);border:1px solid var(--border);border-radius:6px;overflow:hidden;text-align:center}
+  .img-viewer img{max-width:100%;height:auto;display:block;margin:0 auto}
+  .img-caption{font-size:11px;color:var(--dim);font-family:'Share Tech Mono',monospace;padding:8px 12px;background:rgba(0,0,0,0.3)}
 
-  /* ── Tuning Panel ── */
-  .tuning-panel {
-    background:var(--panel); border:1px solid var(--border);
-    border-radius:8px; padding:24px; margin-bottom:24px;
-  }
-  .section-title {
-    font-size:12px; letter-spacing:4px; color:var(--dim);
-    text-transform:uppercase; margin-bottom:18px;
-    font-family:'Share Tech Mono',monospace;
-    display:flex; align-items:center; gap:12px;
-  }
-  .section-title::after { content:''; flex:1; height:1px; background:var(--border); }
+  /* Frame log */
+  .frame-log-row{display:grid;grid-template-columns:60px 80px 1fr 80px 100px 60px 80px;gap:8px;align-items:center;padding:6px 16px;border-bottom:1px solid rgba(26,37,53,0.5);font-family:'Share Tech Mono',monospace;font-size:11px}
+  .frame-log-header{background:var(--bg);font-size:10px;letter-spacing:1px;color:var(--dim);padding:8px 16px;border-bottom:1px solid var(--border)}
+  .frame-log-row.open-row{background:rgba(255,51,85,0.04)}
+  .frame-log-row.alert-row{background:rgba(255,51,85,0.1)}
+  .frame-log-row img{border-radius:3px;border:1px solid var(--border)}
 
-  .tuning-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:20px; margin-bottom:20px; }
+  .event-item{padding:12px 20px;border-bottom:1px solid var(--border);font-family:'Share Tech Mono',monospace;font-size:13px}
+  .event-item:last-child{border-bottom:none}
+  .settings-summary{background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:14px 18px;margin:16px 20px;font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--dim);line-height:2}
+  .settings-summary span{color:var(--green)}
+  .what-happened-box{margin:16px 20px;padding:14px 18px;background:rgba(0,170,255,0.05);border:1px solid rgba(0,170,255,0.2);border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:13px}
+  .what-happened-box .label{color:var(--blue);font-size:11px;letter-spacing:2px;margin-bottom:6px}
+  .empty-state{padding:40px;text-align:center;color:var(--dim);font-family:'Share Tech Mono',monospace;font-size:13px}
+  .session-item{padding:12px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+  .session-item:last-child{border-bottom:none}
 
-  .control-group { display:flex; flex-direction:column; gap:8px; }
-  .control-label {
-    font-size:13px; font-weight:700; color:var(--text); letter-spacing:1px;
-  }
-  .control-hint { font-size:11px; color:var(--dim); font-family:'Share Tech Mono',monospace; }
-  .control-value { color:var(--green); font-weight:700; font-family:'Share Tech Mono',monospace; }
-
-  input[type=range] {
-    width:100%; accent-color:var(--green); cursor:pointer; height:4px;
-  }
-  input[type=number], input[type=text], textarea {
-    background:var(--bg); border:1px solid var(--border); border-radius:4px;
-    color:var(--text); font-family:'Share Tech Mono',monospace;
-    font-size:13px; padding:8px 12px; width:100%;
-    transition:border-color 0.2s;
-  }
-  input[type=number]:focus, input[type=text]:focus, textarea:focus {
-    outline:none; border-color:var(--green);
-  }
-  textarea { resize:vertical; min-height:60px; }
-
-  .full-width { grid-column:1/-1; }
-
-  /* ── Upload Zone ── */
-  .upload-zone {
-    border:2px dashed var(--border); border-radius:8px; padding:36px 24px;
-    text-align:center; cursor:pointer; transition:all 0.3s;
-    background:var(--panel); margin-bottom:24px;
-  }
-  .upload-zone:hover, .upload-zone.dragover {
-    border-color:var(--green); background:rgba(0,255,136,0.03);
-  }
-  .upload-icon { font-size:40px; margin-bottom:12px; }
-  .upload-title { font-size:18px; font-weight:700; color:var(--green); letter-spacing:2px; margin-bottom:6px; }
-  .upload-sub { font-size:12px; color:var(--dim); font-family:'Share Tech Mono',monospace; margin-bottom:16px; }
-
-  .btn {
-    display:inline-block; padding:10px 28px; background:transparent;
-    border:1px solid var(--green); color:var(--green);
-    font-family:'Rajdhani',sans-serif; font-size:14px; font-weight:700;
-    letter-spacing:3px; text-transform:uppercase; cursor:pointer;
-    transition:all 0.2s; border-radius:4px;
-  }
-  .btn:hover { background:var(--green); color:var(--bg); box-shadow:0 0 20px rgba(0,255,136,0.3); }
-  #fileInput { display:none; }
-
-  /* ── Analyzing ── */
-  .analyzing { display:none; text-align:center; padding:28px;
-    background:var(--panel); border:1px solid var(--border); border-radius:8px; margin-bottom:24px; }
-  .analyzing.active { display:block; }
-  .progress-bar-wrap { background:var(--border); border-radius:4px; height:4px; margin:16px auto; max-width:400px; overflow:hidden; }
-  .progress-bar { height:100%; background:var(--green); animation:progress 1.8s ease-in-out infinite; box-shadow:0 0 10px var(--green); }
-  @keyframes progress { 0%{width:0%;margin-left:0} 50%{width:60%;margin-left:20%} 100%{width:0%;margin-left:100%} }
-  .mono { font-family:'Share Tech Mono',monospace; font-size:13px; color:var(--green); letter-spacing:2px; }
-
-  /* ── Stats ── */
-  .stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px; }
-  .stat-card { background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:18px; text-align:center; }
-  .stat-value { font-size:40px; font-weight:700; font-family:'Share Tech Mono',monospace; line-height:1; margin-bottom:6px; }
-  .stat-label { font-size:11px; letter-spacing:2px; color:var(--dim); text-transform:uppercase; }
-  .red{color:var(--red)} .yellow{color:var(--yellow)} .green{color:var(--green)} .blue{color:var(--blue)}
-
-  /* ── Tabs ── */
-  .tabs { display:flex; gap:0; margin-bottom:0; border-bottom:1px solid var(--border); }
-  .tab {
-    padding:10px 22px; font-size:13px; font-weight:700; letter-spacing:2px;
-    text-transform:uppercase; cursor:pointer; color:var(--dim);
-    border-bottom:2px solid transparent; transition:all 0.2s;
-    font-family:'Share Tech Mono',monospace;
-  }
-  .tab.active { color:var(--green); border-bottom-color:var(--green); }
-  .tab-panel { display:none; }
-  .tab-panel.active { display:block; }
-
-  .results-box {
-    background:var(--panel); border:1px solid var(--border);
-    border-radius:0 0 8px 8px; overflow:hidden; margin-bottom:24px;
-  }
-
-  /* ── Alert items ── */
-  .alert-item {
-    padding:14px 20px; border-bottom:1px solid var(--border);
-    animation:slideIn 0.3s ease;
-  }
-  @keyframes slideIn { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:translateX(0)} }
-  .alert-item:last-child { border-bottom:none; }
-  .alert-header { display:flex; align-items:center; gap:12px; margin-bottom:6px; }
-  .badge { padding:3px 10px; border-radius:3px; font-size:11px; font-weight:700;
-    letter-spacing:1px; font-family:'Share Tech Mono',monospace; }
-  .badge-critical { background:rgba(255,51,85,0.15); color:var(--red); border:1px solid rgba(255,51,85,0.3); }
-  .badge-warning  { background:rgba(255,204,0,0.15);  color:var(--yellow); border:1px solid rgba(255,204,0,0.3); }
-  .alert-type { font-size:15px; font-weight:700; color:var(--text); }
-  .alert-msg  { font-size:12px; color:var(--dim); font-family:'Share Tech Mono',monospace; margin-bottom:4px; }
-  .alert-why  { font-size:11px; color:var(--blue); font-family:'Share Tech Mono',monospace; }
-  .alert-meta { font-size:11px; color:var(--dim); font-family:'Share Tech Mono',monospace; margin-top:4px; }
-
-  /* ── Frame log ── */
-  .frame-table { width:100%; border-collapse:collapse; font-family:'Share Tech Mono',monospace; font-size:12px; }
-  .frame-table th { padding:10px 14px; text-align:left; color:var(--dim); font-size:11px;
-    letter-spacing:2px; border-bottom:1px solid var(--border); background:var(--bg); }
-  .frame-table td { padding:8px 14px; border-bottom:1px solid rgba(26,37,53,0.5); color:var(--text); }
-  .frame-table tr:hover td { background:rgba(255,255,255,0.02); }
-  .open-row td { background:rgba(255,51,85,0.05); }
-  .alert-row td { background:rgba(255,51,85,0.1); }
-
-  /* ── Drawer events ── */
-  .event-item { padding:12px 20px; border-bottom:1px solid var(--border); font-family:'Share Tech Mono',monospace; font-size:13px; }
-  .event-item:last-child { border-bottom:none; }
-
-  /* ── Settings summary ── */
-  .settings-summary {
-    background:var(--bg); border:1px solid var(--border); border-radius:4px;
-    padding:14px 18px; margin:16px 20px; font-family:'Share Tech Mono',monospace;
-    font-size:12px; color:var(--dim); line-height:2;
-  }
-  .settings-summary span { color:var(--green); }
-
-  /* ── What happened box ── */
-  .what-happened-box {
-    margin:16px 20px; padding:14px 18px;
-    background:rgba(0,170,255,0.05); border:1px solid rgba(0,170,255,0.2);
-    border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:13px;
-  }
-  .what-happened-box .label { color:var(--blue); font-size:11px; letter-spacing:2px; margin-bottom:6px; }
-  .what-happened-box .content { color:var(--text); }
-
-  .empty-state { padding:40px; text-align:center; color:var(--dim);
-    font-family:'Share Tech Mono',monospace; font-size:13px; }
-
-  /* ── Sessions history ── */
-  .session-item { padding:12px 20px; border-bottom:1px solid var(--border);
-    display:flex; justify-content:space-between; align-items:center; }
-  .session-item:last-child { border-bottom:none; }
-  .session-video { font-size:14px; font-weight:700; color:var(--text); }
-  .session-meta { font-size:11px; color:var(--dim); font-family:'Share Tech Mono',monospace; }
-
-  @media(max-width:640px) {
-    .stats-grid { grid-template-columns:repeat(2,1fr); }
-    .tuning-grid { grid-template-columns:1fr; }
-  }
+  @media(max-width:640px){.stats-grid{grid-template-columns:repeat(2,1fr)}.tuning-grid{grid-template-columns:1fr}.frame-log-row{grid-template-columns:50px 70px 1fr 60px}}
 </style>
 </head>
 <body>
-
 <header>
   <div class="logo">
     <div class="logo-owl">🦉</div>
@@ -201,79 +114,39 @@
 </header>
 
 <main>
-
-  <!-- ── TUNING CONTROLS ── -->
+  <!-- TUNING CONTROLS -->
   <div class="tuning-panel">
     <div class="section-title">Tuning Controls</div>
-
     <div class="tuning-grid">
-
-      <!-- Drawer Sensitivity -->
       <div class="control-group">
-        <div class="control-label">
-          Drawer Sensitivity
-          <span class="control-value" id="drawerVal">20</span>
-        </div>
-        <input type="range" id="drawerSens" min="5" max="50" value="20"
-          oninput="document.getElementById('drawerVal').textContent=this.value">
-        <div class="control-hint">
-          LOW (5) = very sensitive &nbsp;|&nbsp; HIGH (50) = only big changes<br>
-          ↑ raise if too many false alarms &nbsp;·&nbsp; ↓ lower if missing drawer opens
-        </div>
+        <div class="control-label">Drawer Sensitivity <span class="control-value" id="drawerVal">20</span></div>
+        <input type="range" id="drawerSens" min="5" max="50" value="20" oninput="document.getElementById('drawerVal').textContent=this.value">
+        <div class="control-hint">LOW (5) = very sensitive · HIGH (50) = only big changes<br>↑ raise if false alarms · ↓ lower if missing opens</div>
       </div>
-
-      <!-- No-sale Window -->
       <div class="control-group">
-        <div class="control-label">
-          No-Sale Window (seconds)
-          <span class="control-value" id="noSaleVal">120</span>
-        </div>
-        <input type="range" id="noSaleWindow" min="10" max="600" value="120" step="10"
-          oninput="document.getElementById('noSaleVal').textContent=this.value">
-        <div class="control-hint">
-          Alert if drawer opens this many seconds after last transaction<br>
-          120s = 2 min &nbsp;·&nbsp; 300s = 5 min &nbsp;·&nbsp; 600s = 10 min
-        </div>
+        <div class="control-label">No-Sale Window (sec) <span class="control-value" id="noSaleVal">120</span></div>
+        <input type="range" id="noSaleWindow" min="10" max="600" value="120" step="10" oninput="document.getElementById('noSaleVal').textContent=this.value">
+        <div class="control-hint">Alert if drawer opens this many seconds after last sale<br>120=2min · 300=5min · 600=10min</div>
       </div>
-
-      <!-- Drawer Timeout -->
       <div class="control-group">
-        <div class="control-label">
-          Drawer Timeout (seconds)
-          <span class="control-value" id="timeoutVal">60</span>
-        </div>
-        <input type="range" id="drawerTimeout" min="10" max="300" value="60" step="5"
-          oninput="document.getElementById('timeoutVal').textContent=this.value">
-        <div class="control-hint">
-          Alert if drawer stays open longer than this<br>
-          60s = 1 min &nbsp;·&nbsp; 120s = 2 min
-        </div>
+        <div class="control-label">Drawer Timeout (sec) <span class="control-value" id="timeoutVal">60</span></div>
+        <input type="range" id="drawerTimeout" min="10" max="300" value="60" step="5" oninput="document.getElementById('timeoutVal').textContent=this.value">
+        <div class="control-hint">Alert if drawer stays open longer than this<br>60=1min · 120=2min · 20=20sec</div>
       </div>
-
-      <!-- Transaction Times -->
       <div class="control-group">
-        <div class="control-label">Transaction Times (seconds into video)</div>
-        <input type="text" id="txnTimes" placeholder="e.g.  3, 8  — leave blank for auto">
-        <div class="control-hint">
-          Type when sales happened in your video (comma separated)<br>
-          Example: &nbsp;3, 8 &nbsp;means sales at 3s and 8s<br>
-          Leave blank → auto-detected at 30% and 60% of video
-        </div>
+        <div class="control-label">Transaction Times (sec into video)</div>
+        <input type="text" id="txnTimes" placeholder="e.g. 3, 8 — leave blank for auto">
+        <div class="control-hint">When did sales happen? comma separated<br>Leave blank = auto at 30% and 60% of video</div>
       </div>
-
-      <!-- What Happened -->
       <div class="control-group full-width">
         <div class="control-label">What Actually Happened in This Video?</div>
-        <textarea id="whatHappened" placeholder="Example: Cashier opened drawer at 4 seconds without a sale. Then gave change at 9 seconds after a $10 purchase."></textarea>
-        <div class="control-hint">
-          Write what you saw — the app will show this next to what the model detected so you can compare
-        </div>
+        <textarea id="whatHappened" placeholder="Example: Cashier opened drawer at 4 seconds with no sale. Gave change at 9 seconds after $10 purchase."></textarea>
+        <div class="control-hint">Write what you saw — compare it to what the model detected</div>
       </div>
-
     </div>
   </div>
 
-  <!-- ── UPLOAD ZONE ── -->
+  <!-- UPLOAD -->
   <div class="upload-zone" id="uploadZone">
     <div class="upload-icon">📹</div>
     <div class="upload-title">Upload Video to Analyze</div>
@@ -282,43 +155,30 @@
     <input type="file" id="fileInput" accept="video/*">
   </div>
 
-  <!-- ── ANALYZING ── -->
+  <!-- ANALYZING -->
   <div class="analyzing" id="analyzing">
     <div class="mono">⚙ ANALYZING VIDEO...</div>
     <div class="progress-bar-wrap"><div class="progress-bar"></div></div>
     <div class="mono" id="analyzingFile" style="color:var(--dim);font-size:12px"></div>
   </div>
 
-  <!-- ── STATS ── -->
+  <!-- STATS -->
   <div class="stats-grid">
-    <div class="stat-card">
-      <div class="stat-value red" id="statCritical">—</div>
-      <div class="stat-label">Critical Alerts</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value yellow" id="statWarnings">—</div>
-      <div class="stat-label">Warnings</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value green" id="statTxn">—</div>
-      <div class="stat-label">Transactions</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value blue" id="statDrawer">—</div>
-      <div class="stat-label">Drawer Events</div>
-    </div>
+    <div class="stat-card"><div class="stat-value red" id="statCritical">—</div><div class="stat-label">Critical Alerts</div></div>
+    <div class="stat-card"><div class="stat-value yellow" id="statWarnings">—</div><div class="stat-label">Warnings</div></div>
+    <div class="stat-card"><div class="stat-value green" id="statTxn">—</div><div class="stat-label">Transactions</div></div>
+    <div class="stat-card"><div class="stat-value blue" id="statDrawer">—</div><div class="stat-label">Drawer Events</div></div>
   </div>
 
-  <!-- ── RESULTS TABS ── -->
+  <!-- RESULTS -->
   <div id="resultsSection" style="display:none">
     <div class="tabs">
-      <div class="tab active" onclick="switchTab('alerts')">🚨 Alerts</div>
+      <div class="tab active" onclick="switchTab('alerts')">🚨 Alerts + Images</div>
       <div class="tab" onclick="switchTab('framelog')">📋 Frame Log</div>
       <div class="tab" onclick="switchTab('drawerevents')">🗄 Drawer Events</div>
-      <div class="tab" onclick="switchTab('settings')">⚙ Settings Used</div>
+      <div class="tab" onclick="switchTab('settings')">⚙ Settings</div>
       <div class="tab" onclick="switchTab('history')">📁 History</div>
     </div>
-
     <div class="results-box">
 
       <!-- ALERTS TAB -->
@@ -327,227 +187,216 @@
           <div class="label">// WHAT YOU SAID HAPPENED</div>
           <div class="content" id="whatHappenedText"></div>
         </div>
-        <div id="alertList">
-          <div class="empty-state">// No results yet — upload a video above</div>
-        </div>
+        <div id="alertList"><div class="empty-state">// Upload a video to see alerts with images</div></div>
       </div>
 
       <!-- FRAME LOG TAB -->
       <div class="tab-panel" id="tab-framelog">
-        <div style="padding:16px 20px">
-          <div class="mono" style="color:var(--dim);font-size:11px;margin-bottom:12px">
-            // SECOND-BY-SECOND LOG — shows exactly what the model saw each second
-          </div>
-          <div style="overflow-x:auto">
-            <table class="frame-table">
-              <thead>
-                <tr>
-                  <th>TIME</th>
-                  <th>DRAWER STATE</th>
-                  <th>DIFF SCORE vs THRESHOLD</th>
-                  <th>MOTION %</th>
-                  <th>SECS SINCE TXN</th>
-                  <th>ALERT?</th>
-                </tr>
-              </thead>
-              <tbody id="frameLogBody"></tbody>
-            </table>
-          </div>
+        <div class="frame-log-row frame-log-header">
+          <div>THUMB</div><div>TIME</div><div>DRAWER · DIFF vs THRESHOLD</div>
+          <div>MOTION</div><div>SINCE TXN</div><div>ALERT</div><div>STATE</div>
         </div>
+        <div id="frameLogBody"></div>
       </div>
 
       <!-- DRAWER EVENTS TAB -->
       <div class="tab-panel" id="tab-drawerevents">
-        <div id="drawerEventsList">
-          <div class="empty-state">// No drawer events detected yet</div>
-        </div>
+        <div id="drawerEventsList"><div class="empty-state">// No drawer events yet</div></div>
       </div>
 
       <!-- SETTINGS TAB -->
       <div class="tab-panel" id="tab-settings">
-        <div id="settingsDisplay" class="settings-summary">
-          // Run an analysis to see settings used
-        </div>
+        <div id="settingsDisplay" class="settings-summary">// Run an analysis first</div>
       </div>
 
       <!-- HISTORY TAB -->
       <div class="tab-panel" id="tab-history">
-        <div id="historyList">
-          <div class="empty-state">// No past sessions this run</div>
-        </div>
+        <div id="historyList"><div class="empty-state">// No sessions yet</div></div>
       </div>
-
     </div>
   </div>
-
 </main>
 
 <script>
-// ── Drag & Drop ─────────────────────────────────────────────────────────────
 const uploadZone = document.getElementById('uploadZone');
 const fileInput  = document.getElementById('fileInput');
 
-uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
-uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
-uploadZone.addEventListener('drop', e => {
-  e.preventDefault(); uploadZone.classList.remove('dragover');
-  if (e.dataTransfer.files[0]) uploadVideo(e.dataTransfer.files[0]);
-});
-fileInput.addEventListener('change', e => { if (e.target.files[0]) uploadVideo(e.target.files[0]); });
+uploadZone.addEventListener('dragover', e=>{e.preventDefault();uploadZone.classList.add('dragover')});
+uploadZone.addEventListener('dragleave', ()=>uploadZone.classList.remove('dragover'));
+uploadZone.addEventListener('drop', e=>{e.preventDefault();uploadZone.classList.remove('dragover');if(e.dataTransfer.files[0])uploadVideo(e.dataTransfer.files[0])});
+fileInput.addEventListener('change', e=>{if(e.target.files[0])uploadVideo(e.target.files[0])});
 
-// ── Upload & Analyze ─────────────────────────────────────────────────────────
 function uploadVideo(file) {
   const formData = new FormData();
   formData.append('video', file);
-  formData.append('drawer_sensitivity',  document.getElementById('drawerSens').value);
-  formData.append('motion_sensitivity',  '40');
-  formData.append('no_sale_window_sec',  document.getElementById('noSaleWindow').value);
-  formData.append('drawer_timeout_sec',  document.getElementById('drawerTimeout').value);
-  formData.append('what_happened',       document.getElementById('whatHappened').value);
-  formData.append('txn_times',           document.getElementById('txnTimes').value);
+  formData.append('drawer_sensitivity', document.getElementById('drawerSens').value);
+  formData.append('motion_sensitivity', '40');
+  formData.append('no_sale_window_sec', document.getElementById('noSaleWindow').value);
+  formData.append('drawer_timeout_sec', document.getElementById('drawerTimeout').value);
+  formData.append('what_happened',      document.getElementById('whatHappened').value);
+  formData.append('txn_times',          document.getElementById('txnTimes').value);
 
   document.getElementById('analyzing').classList.add('active');
   document.getElementById('analyzingFile').textContent = '// ' + file.name;
   document.getElementById('resultsSection').style.display = 'none';
 
-  fetch('/analyze', { method:'POST', body:formData })
-    .then(r => r.json())
-    .then(data => {
+  fetch('/analyze', {method:'POST', body:formData})
+    .then(r=>r.json())
+    .then(data=>{
       document.getElementById('analyzing').classList.remove('active');
-      if (data.error) { alert('Error: ' + data.error); return; }
+      if(data.error){alert('Error: '+data.error);return}
       showResults(data);
     })
-    .catch(err => {
-      document.getElementById('analyzing').classList.remove('active');
-      alert('Failed: ' + err.message);
-    });
+    .catch(err=>{document.getElementById('analyzing').classList.remove('active');alert('Failed: '+err.message)});
 }
 
-// ── Show Results ──────────────────────────────────────────────────────────────
 function showResults(data) {
   const s = data.summary;
-
-  // Stats
   document.getElementById('statCritical').textContent = s.critical;
   document.getElementById('statWarnings').textContent  = s.warnings;
   document.getElementById('statTxn').textContent       = s.transactions_recorded;
   document.getElementById('statDrawer').textContent    = s.drawer_events;
-
   document.getElementById('resultsSection').style.display = 'block';
 
   // What happened
-  if (data.what_happened) {
-    document.getElementById('whatHappenedDisplay').style.display = 'block';
-    document.getElementById('whatHappenedText').textContent = data.what_happened;
+  if(data.what_happened){
+    document.getElementById('whatHappenedDisplay').style.display='block';
+    document.getElementById('whatHappenedText').textContent=data.what_happened;
   } else {
-    document.getElementById('whatHappenedDisplay').style.display = 'none';
+    document.getElementById('whatHappenedDisplay').style.display='none';
   }
 
-  // Alerts
+  // Alerts with images
   const alertList = document.getElementById('alertList');
-  if (data.alerts && data.alerts.length > 0) {
-    alertList.innerHTML = data.alerts.map(a => `
-      <div class="alert-item">
+  if(data.alerts && data.alerts.length > 0){
+    alertList.innerHTML = data.alerts.map((a,i) => {
+      const hasSBS  = a.sidebyside_b64 ? '' : 'display:none';
+      const hasBox  = a.boxed_b64     ? '' : 'display:none';
+      return `
+      <div class="alert-card">
         <div class="alert-header">
           <span class="badge ${a.severity==='CRITICAL'?'badge-critical':'badge-warning'}">${a.severity}</span>
           <span class="alert-type">${a.type}</span>
         </div>
         <div class="alert-msg">${a.message}</div>
-        <div class="alert-why">// WHY: ${a.why}</div>
-        <div class="alert-meta">video @ ${a.video_time} &nbsp;·&nbsp; ${a.timestamp}</div>
-      </div>
-    `).join('');
+        <div class="alert-why">// WHY: ${a.why} &nbsp;·&nbsp; video @ ${a.video_time} &nbsp;·&nbsp; ${a.timestamp}</div>
+
+        <!-- Image tabs -->
+        <div class="img-tabs">
+          <div class="img-tab active" onclick="showImg(${i},'snapshot',this)">📸 Snapshot</div>
+          <div class="img-tab" onclick="showImg(${i},'sbs',this)" style="${hasSBS}">📊 Before/After</div>
+          <div class="img-tab" onclick="showImg(${i},'boxed',this)" style="${hasBox}">🔴 Detection Zone</div>
+        </div>
+        <div class="img-viewer" id="viewer-${i}">
+          <img id="img-${i}" src="data:image/jpeg;base64,${a.snapshot_b64}" alt="Alert snapshot">
+          <div class="img-caption" id="cap-${i}">📸 Exact frame when alert fired at ${a.video_time}</div>
+        </div>
+      </div>`;
+    }).join('');
+
+    // Store image data for tab switching
+    window._alertImgs = data.alerts.map(a=>({
+      snapshot: a.snapshot_b64,
+      sbs:      a.sidebyside_b64,
+      boxed:    a.boxed_b64
+    }));
   } else {
-    alertList.innerHTML = '<div class="empty-state">// ✅ No alerts fired — try lowering drawer sensitivity or no-sale window</div>';
+    alertList.innerHTML = '<div class="empty-state">// ✅ No alerts fired — try lowering Drawer Sensitivity or No-Sale Window</div>';
   }
 
-  // Frame Log
-  const tbody = document.getElementById('frameLogBody');
-  tbody.innerHTML = (data.frame_log || []).map(f => {
+  // Frame log with thumbnails
+  const logBody = document.getElementById('frameLogBody');
+  logBody.innerHTML = (data.frame_log||[]).map(f=>{
     const isOpen  = f.drawer.includes('OPEN');
     const isAlert = f.alert_fired.includes('YES');
-    const rowClass = isAlert ? 'alert-row' : (isOpen ? 'open-row' : '');
-    return `<tr class="${rowClass}">
-      <td>${f.time}</td>
-      <td>${f.drawer}</td>
-      <td>${f.diff_vs_threshold}</td>
-      <td>${f.motion_pct}</td>
-      <td>${f.secs_since_txn}</td>
-      <td>${f.alert_fired}</td>
-    </tr>`;
+    const rc = isAlert?'alert-row':isOpen?'open-row':'';
+    const thumb = f.thumb_b64 ? `<img src="data:image/jpeg;base64,${f.thumb_b64}" width="60" height="34">` : '';
+    return `<div class="frame-log-row ${rc}">
+      <div>${thumb}</div>
+      <div>${f.time}</div>
+      <div>${f.drawer} &nbsp; ${f.diff_vs_threshold}</div>
+      <div>${f.motion_pct}</div>
+      <div>${f.secs_since_txn}</div>
+      <div>${f.alert_fired}</div>
+      <div>${f.drawer}</div>
+    </div>`;
   }).join('');
 
-  // Drawer Events
+  // Drawer events
   const devList = document.getElementById('drawerEventsList');
-  if (data.drawer_events && data.drawer_events.length > 0) {
-    devList.innerHTML = data.drawer_events.map(e => `
+  if(data.drawer_events && data.drawer_events.length>0){
+    devList.innerHTML = data.drawer_events.map(e=>`
       <div class="event-item">
-        ${e.event === 'opened'
-          ? `🔴 <span style="color:var(--red)">DRAWER OPENED</span> at ${e.time}s &nbsp;·&nbsp; diff_score: ${e.diff_score}`
-          : `🟢 <span style="color:var(--green)">DRAWER CLOSED</span> at ${e.time}s &nbsp;·&nbsp; was open for <span style="color:var(--yellow)">${e.duration_sec}s</span>`
-        }
-      </div>
-    `).join('');
+        ${e.event==='opened'
+          ?`🔴 <span style="color:var(--red)">OPENED</span> at ${e.time}s &nbsp;·&nbsp; diff_score: <span style="color:var(--yellow)">${e.diff_score}</span>`
+          :`🟢 <span style="color:var(--green)">CLOSED</span> at ${e.time}s &nbsp;·&nbsp; was open <span style="color:var(--yellow)">${e.duration_sec}s</span>`}
+      </div>`).join('');
   } else {
-    devList.innerHTML = '<div class="empty-state">// No drawer open/close events detected<br>Try lowering Drawer Sensitivity</div>';
+    devList.innerHTML='<div class="empty-state">// No drawer events detected — try lowering Drawer Sensitivity</div>';
   }
 
-  // Settings used
+  // Settings
   const st = data.settings_used;
-  document.getElementById('settingsDisplay').innerHTML = `
-    // SETTINGS USED FOR THIS ANALYSIS<br><br>
-    drawer_sensitivity  = <span>${st.drawer_sensitivity}</span>  // pixel diff threshold<br>
-    no_sale_window_sec  = <span>${st.no_sale_window_sec}</span>  // seconds<br>
-    drawer_timeout_sec  = <span>${st.drawer_timeout_sec}</span>  // seconds<br>
-    transaction_times   = <span>${st.transaction_times.join(', ')}s</span>  // ${st.auto_transactions ? 'AUTO (30% and 60% of video)' : 'MANUAL (you entered these)'}<br><br>
-    // VIDEO INFO<br>
+  document.getElementById('settingsDisplay').innerHTML=`
+    // SETTINGS USED<br><br>
+    drawer_sensitivity = <span>${st.drawer_sensitivity}</span><br>
+    no_sale_window_sec = <span>${st.no_sale_window_sec}</span><br>
+    drawer_timeout_sec = <span>${st.drawer_timeout_sec}</span><br>
+    transaction_times  = <span>${st.transaction_times.join(', ')}s</span> (${st.auto_transactions?'AUTO':'MANUAL'})<br><br>
+    // VIDEO<br>
     duration   = <span>${data.video_info.duration_sec}s</span><br>
     fps        = <span>${data.video_info.fps}</span><br>
-    resolution = <span>${data.video_info.resolution}</span><br>
-    frames analyzed = <span>${data.video_info.frames_analyzed}</span>
-  `;
+    resolution = <span>${data.video_info.resolution}</span>`;
 
-  // Load history
   loadHistory();
-
-  // Switch to alerts tab
   switchTab('alerts');
 }
 
-// ── Tabs ──────────────────────────────────────────────────────────────────────
-function switchTab(name) {
-  document.querySelectorAll('.tab').forEach((t,i) => {
-    const names = ['alerts','framelog','drawerevents','settings','history'];
-    t.classList.toggle('active', names[i] === name);
-  });
-  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-  document.getElementById('tab-' + name).classList.add('active');
-  if (name === 'history') loadHistory();
+function showImg(alertIdx, type, tabEl) {
+  const imgs = window._alertImgs[alertIdx];
+  const imgEl = document.getElementById('img-'+alertIdx);
+  const capEl = document.getElementById('cap-'+alertIdx);
+
+  // Update active tab
+  tabEl.closest('.img-tabs').querySelectorAll('.img-tab').forEach(t=>t.classList.remove('active'));
+  tabEl.classList.add('active');
+
+  if(type==='snapshot'){
+    imgEl.src = 'data:image/jpeg;base64,'+imgs.snapshot;
+    capEl.textContent = '📸 Exact frame when alert fired';
+  } else if(type==='sbs' && imgs.sbs){
+    imgEl.src = 'data:image/jpeg;base64,'+imgs.sbs;
+    capEl.textContent = '📊 Before (drawer closed) vs After (alert frame)';
+  } else if(type==='boxed' && imgs.boxed){
+    imgEl.src = 'data:image/jpeg;base64,'+imgs.boxed;
+    capEl.textContent = '🔴 Yellow box = region the model is watching';
+  }
 }
 
-// ── History ───────────────────────────────────────────────────────────────────
-function loadHistory() {
-  fetch('/sessions')
-    .then(r => r.json())
-    .then(sessions => {
-      const el = document.getElementById('historyList');
-      if (!sessions.length) {
-        el.innerHTML = '<div class="empty-state">// No sessions yet this run</div>';
-        return;
-      }
-      el.innerHTML = sessions.map(s => `
-        <div class="session-item">
-          <div>
-            <div class="session-video">${s.video}</div>
-            <div class="session-meta">${s.timestamp} &nbsp;·&nbsp; ${s.what_happened || 'no description'}</div>
-          </div>
-          <div style="text-align:right">
-            <span style="color:var(--red);font-family:'Share Tech Mono',monospace;font-size:14px">${s.critical} critical</span>
-            <div class="session-meta">${s.total_alerts} total alerts</div>
-          </div>
+function switchTab(name){
+  const names=['alerts','framelog','drawerevents','settings','history'];
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',names[i]===name));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  if(name==='history') loadHistory();
+}
+
+function loadHistory(){
+  fetch('/sessions').then(r=>r.json()).then(sessions=>{
+    const el=document.getElementById('historyList');
+    if(!sessions.length){el.innerHTML='<div class="empty-state">// No sessions yet</div>';return}
+    el.innerHTML=sessions.map(s=>`
+      <div class="session-item">
+        <div>
+          <div style="font-size:14px;font-weight:700">${s.video}</div>
+          <div style="font-size:11px;color:var(--dim);font-family:'Share Tech Mono',monospace">${s.timestamp} · ${s.what_happened||'no description'}</div>
         </div>
-      `).join('');
-    });
+        <div style="text-align:right">
+          <span style="color:var(--red);font-family:'Share Tech Mono',monospace">${s.critical} critical</span>
+          <div style="font-size:11px;color:var(--dim)">${s.total_alerts} total</div>
+        </div>
+      </div>`).join('');
+  });
 }
 </script>
 </body>
