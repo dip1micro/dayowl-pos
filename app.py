@@ -5,6 +5,7 @@ import base64
 import os
 from datetime import datetime
 import uuid
+import requests  # for Supabase REST API calls
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024
@@ -12,6 +13,94 @@ UPLOAD_FOLDER = '/tmp/dayowl_uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 all_sessions = []
+
+# ── Supabase Config ────────────────────────────────────────────────────────────
+SUPABASE_URL     = os.environ.get('SUPABASE_URL', 'https://ywiuvqtjvlajzgailajc.supabase.co')
+SUPABASE_KEY     = os.environ.get('SUPABASE_SERVICE_KEY', '')  # set in Railway env vars
+STORE_ID         = os.environ.get('STORE_ID', '85485ddc-d786-40a0-9f1b-5009513c1b6a')
+
+def push_alert_to_supabase(alert):
+    """
+    Push a detected alert into the Supabase alerts table.
+    Called automatically whenever the video analyzer fires an alert.
+    """
+    if not SUPABASE_KEY:
+        print('[Supabase] SUPABASE_SERVICE_KEY not set — skipping push')
+        return False
+
+    severity_map = {'CRITICAL': 'high', 'WARNING': 'medium'}
+
+    payload = {
+        'store_id':    STORE_ID,
+        'severity':    severity_map.get(alert['severity'], 'medium'),
+        'type':        alert['type'].lower().replace(' ', '_').replace('—', '').replace('-', '_'),
+        'message':     alert['message'],
+        'register':    'Video Analyzer',
+        'cashier_name': None,
+        'is_resolved': False,
+    }
+
+    headers = {
+        'apikey':        SUPABASE_KEY,
+        'Authorization': f'Bearer {SUPABASE_KEY}',
+        'Content-Type':  'application/json',
+        'Prefer':        'return=minimal',
+    }
+
+    try:
+        resp = requests.post(
+            f'{SUPABASE_URL}/rest/v1/alerts',
+            json=payload,
+            headers=headers,
+            timeout=5
+        )
+        if resp.status_code in (200, 201):
+            print(f'[Supabase] Alert pushed: {alert["type"]}')
+            return True
+        else:
+            print(f'[Supabase] Push failed: {resp.status_code} {resp.text}')
+            return False
+    except Exception as e:
+        print(f'[Supabase] Error pushing alert: {e}')
+        return False
+
+
+def push_transaction_to_supabase(tx_number, amount, tx_type, status, cashier=None, register=None):
+    """
+    Push a transaction record into the Supabase transactions table.
+    """
+    if not SUPABASE_KEY:
+        return False
+
+    payload = {
+        'store_id':     STORE_ID,
+        'tx_number':    tx_number,
+        'amount':       amount,
+        'type':         tx_type,
+        'status':       status,
+        'cashier_name': cashier,
+        'register':     register,
+    }
+
+    headers = {
+        'apikey':        SUPABASE_KEY,
+        'Authorization': f'Bearer {SUPABASE_KEY}',
+        'Content-Type':  'application/json',
+        'Prefer':        'return=minimal',
+    }
+
+    try:
+        resp = requests.post(
+            f'{SUPABASE_URL}/rest/v1/transactions',
+            json=payload,
+            headers=headers,
+            timeout=5
+        )
+        return resp.status_code in (200, 201)
+    except Exception as e:
+        print(f'[Supabase] Error pushing transaction: {e}')
+        return False
+
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 def frame_to_base64(frame):
@@ -24,11 +113,9 @@ def annotate_frame(frame, label, severity='CRITICAL'):
     annotated = frame.copy()
     h, w = annotated.shape[:2]
     color = (0, 0, 255) if severity == 'CRITICAL' else (0, 165, 255)
-    # Dark banner at top
     cv2.rectangle(annotated, (0, 0), (w, 48), (0, 0, 0), -1)
     cv2.putText(annotated, f'DAYOWL ALERT: {label}',
                 (10, 32), cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
-    # Timestamp
     ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     cv2.putText(annotated, ts, (w - 220, 32),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (180, 180, 180), 1)
@@ -38,23 +125,16 @@ def make_side_by_side(before_frame, after_frame, label):
     """Create before/after comparison image"""
     h = max(before_frame.shape[0], after_frame.shape[0])
     w = before_frame.shape[1]
-
-    # Resize both to same height
     b = cv2.resize(before_frame, (w, h))
     a = cv2.resize(after_frame,  (w, h))
-
-    # Add labels
     cv2.rectangle(b, (0, 0), (w, 36), (30, 30, 30), -1)
     cv2.putText(b, 'BEFORE (drawer closed)', (8, 24),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 100), 1)
     cv2.rectangle(a, (0, 0), (w, 36), (30, 30, 30), -1)
     cv2.putText(a, f'ALERT: {label}', (8, 24),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 1)
-
-    # Divider line
     divider = np.zeros((h, 4, 3), dtype=np.uint8)
     divider[:] = (80, 80, 80)
-
     combined = np.hstack([b, divider, a])
     return combined
 
@@ -62,7 +142,6 @@ def draw_detection_box(frame, sensitivity):
     """Draw the region the model is actually watching"""
     annotated = frame.copy()
     h, w = annotated.shape[:2]
-    # Draw the detection zone (same region as DrawerDetector)
     x1, y1 = int(w*0.2), int(h*0.5)
     x2, y2 = int(w*0.8), h
     cv2.rectangle(annotated, (x1, y1), (x2, y2), (0, 255, 255), 2)
@@ -159,10 +238,8 @@ def analyze_video(video_path, settings):
     session_alerts = []
     frame_log = []
     drawer_timeout_alerted = False
-
-    # Store frames for visual output
-    prev_frame = None        # last frame before alert (for side-by-side)
-    frame_buffer = []        # rolling buffer of recent frames
+    prev_frame = None
+    frame_buffer = []
 
     frame_num = 0
     skip = max(1, int(fps / 5))
@@ -173,7 +250,6 @@ def analyze_video(video_path, settings):
             break
         frame_num += 1
 
-        # Keep rolling buffer of last 25 frames
         frame_buffer.append(frame.copy())
         if len(frame_buffer) > 25:
             frame_buffer.pop(0)
@@ -187,6 +263,15 @@ def analyze_video(video_path, settings):
             if abs(timestamp - t) < (skip / fps) * 1.5:
                 last_txn_time = timestamp
                 txn_count += 1
+                # ── Push transaction to Supabase ──────────────────────────
+                push_transaction_to_supabase(
+                    tx_number=f'VID-{str(uuid.uuid4())[:6].upper()}',
+                    amount=0.00,
+                    tx_type='no_sale',
+                    status='review',
+                    cashier=None,
+                    register='Video Analyzer'
+                )
 
         secs_since_txn = round(timestamp - last_txn_time, 1) if last_txn_time else 9999
         is_open, just_opened, just_closed, diff_score = drawer_det.process(frame, timestamp)
@@ -196,19 +281,14 @@ def analyze_video(video_path, settings):
         if just_opened and secs_since_txn > no_sale_window:
             before_frame = frame_buffer[0] if frame_buffer else frame
 
-            # 📸 Snapshot — annotated alert frame
             snapshot = annotate_frame(frame.copy(), 'DRAWER OPEN — NO SALE', 'CRITICAL')
             snapshot_b64 = frame_to_base64(snapshot)
-
-            # 📊 Side-by-side before/after
             sbs = make_side_by_side(before_frame, frame.copy(), 'DRAWER OPEN')
             sbs_b64 = frame_to_base64(sbs)
-
-            # 🔴 Detection box — show what zone model watches
             boxed = draw_detection_box(frame.copy(), drawer_sens)
             boxed_b64 = frame_to_base64(boxed)
 
-            session_alerts.append({
+            alert = {
                 'id': str(uuid.uuid4())[:8],
                 'type': 'DRAWER OPEN — NO SALE',
                 'severity': 'CRITICAL',
@@ -220,7 +300,11 @@ def analyze_video(video_path, settings):
                 'snapshot_b64': snapshot_b64,
                 'sidebyside_b64': sbs_b64,
                 'boxed_b64': boxed_b64,
-            })
+            }
+            session_alerts.append(alert)
+
+            # ── Push to Supabase → appears live in DayOwl dashboard ───────
+            push_alert_to_supabase(alert)
 
         # ── ALERT: Drawer open too long ───────────────────────────────────
         if is_open and drawer_det.open_time and not drawer_timeout_alerted:
@@ -231,7 +315,7 @@ def analyze_video(video_path, settings):
                 boxed = draw_detection_box(frame.copy(), drawer_sens)
                 boxed_b64 = frame_to_base64(boxed)
 
-                session_alerts.append({
+                alert = {
                     'id': str(uuid.uuid4())[:8],
                     'type': 'DRAWER OPEN TOO LONG',
                     'severity': 'WARNING',
@@ -243,15 +327,17 @@ def analyze_video(video_path, settings):
                     'snapshot_b64': snapshot_b64,
                     'sidebyside_b64': None,
                     'boxed_b64': boxed_b64,
-                })
+                }
+                session_alerts.append(alert)
+
+                # ── Push to Supabase ──────────────────────────────────────
+                push_alert_to_supabase(alert)
                 drawer_timeout_alerted = True
 
         if just_closed:
             drawer_timeout_alerted = False
 
-        # Per-second log
         if frame_num % int(fps) == 0:
-            # Tiny thumbnail for frame log
             thumb = cv2.resize(frame, (120, 68))
             thumb_b64 = frame_to_base64(thumb)
             frame_log.append({
