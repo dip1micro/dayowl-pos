@@ -19,25 +19,65 @@ SUPABASE_URL     = os.environ.get('SUPABASE_URL', 'https://ywiuvqtjvlajzgailajc.
 SUPABASE_KEY     = os.environ.get('SUPABASE_SERVICE_KEY', '')  # set in Railway env vars
 STORE_ID         = os.environ.get('STORE_ID', '85485ddc-d786-40a0-9f1b-5009513c1b6a')
 
+def upload_snapshot_to_supabase(snapshot_b64, alert_id):
+    """
+    Upload a base64 snapshot image to Supabase Storage.
+    Returns the public URL or None if failed.
+    """
+    if not SUPABASE_KEY or not snapshot_b64:
+        return None
+    try:
+        img_bytes = base64.b64decode(snapshot_b64)
+        filename  = f'{alert_id}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.jpg'
+        headers   = {
+            'apikey':        SUPABASE_KEY,
+            'Authorization': f'Bearer {SUPABASE_KEY}',
+            'Content-Type':  'image/jpeg',
+            'x-upsert':      'true',
+        }
+        resp = requests.post(
+            f'{SUPABASE_URL}/storage/v1/object/snapshots/{filename}',
+            data=img_bytes,
+            headers=headers,
+            timeout=10
+        )
+        if resp.status_code in (200, 201):
+            public_url = f'{SUPABASE_URL}/storage/v1/object/public/snapshots/{filename}'
+            print(f'[Supabase] Snapshot uploaded: {public_url}')
+            return public_url
+        else:
+            print(f'[Supabase] Snapshot upload failed: {resp.status_code} {resp.text}')
+            return None
+    except Exception as e:
+        print(f'[Supabase] Snapshot upload error: {e}')
+        return None
+
+
 def push_alert_to_supabase(alert):
     """
     Push a detected alert into the Supabase alerts table.
-    Called automatically whenever the video analyzer fires an alert.
+    Uploads snapshot image to Storage and saves public URL.
     """
     if not SUPABASE_KEY:
         print('[Supabase] SUPABASE_SERVICE_KEY not set — skipping push')
         return False
 
+    # Upload snapshot image first
+    snapshot_url = upload_snapshot_to_supabase(
+        alert.get('snapshot_b64'), alert['id']
+    )
+
     severity_map = {'CRITICAL': 'high', 'WARNING': 'medium'}
 
     payload = {
-        'store_id':    STORE_ID,
-        'severity':    severity_map.get(alert['severity'], 'medium'),
-        'type':        alert['type'].lower().replace(' ', '_').replace('—', '').replace('-', '_'),
-        'message':     alert['message'],
-        'register':    'Video Analyzer',
+        'store_id':     STORE_ID,
+        'severity':     severity_map.get(alert['severity'], 'medium'),
+        'type':         alert['type'].lower().replace(' ', '_').replace('—', '').replace('-', '_'),
+        'message':      alert['message'],
+        'register':     'Video Analyzer',
         'cashier_name': None,
-        'is_resolved': False,
+        'is_resolved':  False,
+        'snapshot_url': snapshot_url,
     }
 
     headers = {
@@ -55,7 +95,7 @@ def push_alert_to_supabase(alert):
             timeout=5
         )
         if resp.status_code in (200, 201):
-            print(f'[Supabase] Alert pushed: {alert["type"]}')
+            print(f'[Supabase] Alert pushed: {alert["type"]} | snapshot: {snapshot_url}')
             return True
         else:
             print(f'[Supabase] Push failed: {resp.status_code} {resp.text}')
